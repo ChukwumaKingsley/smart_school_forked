@@ -4,6 +4,7 @@ from fastapi import FastAPI, File, Response, UploadFile, status, HTTPException, 
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from typing import List, Optional
+import re
 
 from sqlalchemy import func
 from sqlalchemy import exc
@@ -26,10 +27,15 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     hashed_password = utils.hash(user.password)
     user.password = hashed_password
 
+    existing_email = db.query(models.Instructor).filter
+
     if user.id == None:
         new_user = models.Instructor(**user.dict())
     else:
-        new_user = models.Student(**user.dict())
+        if (re.match(r'^20\d{9}$', str(user.id))):
+            new_user = models.Student(**user.dict())
+        else:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid registration number!")
     try:
         db.add(new_user)
         db.commit()

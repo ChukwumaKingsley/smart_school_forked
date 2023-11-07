@@ -10,6 +10,7 @@ class Student(Base):
     __tablename__ = "students"
 
     id = Column(BigInteger, primary_key=True)
+    title = Column(String, nullable=False)
     name = Column(String, nullable=False)
     faculty = Column(String, nullable=False)
     department = Column(String(3), nullable=False)
@@ -24,6 +25,7 @@ class Instructor(Base):
     __tablename__ = "instructors"
 
     id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
     name = Column(String, nullable=False)
     faculty = Column(String, nullable=False)
     department = Column(String(3), nullable=False)

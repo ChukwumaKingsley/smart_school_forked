@@ -29,6 +29,7 @@ class Faculty(BaseModel):
 
 
 class User(BaseModel):
+    title: Optional[str] = None
     name: str
     email: EmailStr
     department: constr(max_length=3, min_length=3)
@@ -39,6 +40,7 @@ class User(BaseModel):
 
 class UserCreate(User):
     password: str
+    title: Optional[str] = None
     id: Optional[int] = None
 
 
@@ -58,6 +60,7 @@ class UserPassword(BaseModel):
 class UserOut(User):
     id: int
     is_instructor: Optional[bool] = None
+    title: Optional[str] = None
     photo_url: Optional[str]
 
     class Config:

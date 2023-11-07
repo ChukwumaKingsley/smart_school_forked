@@ -17,11 +17,11 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
             models.Instructor.email == user_credentials.username).first()
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail=f"Invalid Credentials")
+                status_code=status.HTTP_403_FORBIDDEN, detail=f"Invalid username or password!")
         is_instructor = True
     if not utils.verify(user_credentials.password, user.password):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail=f"Invalid Credentials")
+            status_code=status.HTTP_403_FORBIDDEN, detail=f"Invalid username or password!")
 
     # create a token
     # return token
