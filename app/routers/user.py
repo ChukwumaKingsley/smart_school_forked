@@ -27,16 +27,29 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     hashed_password = utils.hash(user.password)
     user.password = hashed_password
 
-    existing_email = db.query(models.Instructor).filter
+    existing_student_email = db.query(models.Student).filter(models.Student.email == user.email).first()
+    existing_instructor_email = db.query(models.Instructor).filter(models.Instructor.email == user.email).first()
+    existing_regno = db.query(models.Student).filter(models.Student.id == user.id).first()
 
     if user.id == None:
-        new_user = models.Instructor(**user.dict())
-    else:
-        if (re.match(r'^20\d{9}$', str(user.id))):
-            new_user = models.Student(**user.dict())
+        if not existing_instructor_email and not existing_student_email:
+            new_user = models.Instructor(**user.dict())
         else:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid registration number!")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account with this email already exists.")
+    else:
+        if not existing_student_email and not existing_student_email:
+            if not existing_regno:
+                if (re.match(r'^20\d{9}$', str(user.id))):
+                    new_user = models.Student(**user.dict())
+                else:
+                    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid registration number!")
+            else:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account with this registration number already exists.")
+        else:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account with this email already exists.")
+              
     try:
+                
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
@@ -123,7 +136,11 @@ async def upload_photo(id: int, file: UploadFile = File(...),
     if user_query.first().id != user_token.id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
-    response = cloudinary.uploader.upload(file.file)
+    response = cloudinary.uploader.upload(
+        file.file,
+        public_id="profile_picture"+str(id),
+        folder="FUTOAcademia-profile-pics",
+        )
     image_url = response.get("secure_url")
     user_query.update({"photo_url": image_url}, synchronize_session=False)
     db.commit()
