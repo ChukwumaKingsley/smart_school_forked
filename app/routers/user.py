@@ -98,9 +98,9 @@ def update_password(id: int, user_data: schemas.UserPassword,  db: Session = Dep
                                 detail=f"User with id: {id} does not exist")
     if user_query.first().id != user_token.id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-    if not utils.verify(user_data.confirm_password, user_query.first().password):
+    if not utils.verify(user_data.old_password, user_query.first().password):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail=f"Password not correct")
+            status_code=status.HTTP_403_FORBIDDEN, detail=f"Incorrect old password")
     hashed_password = utils.hash(user_data.new_password)
     user_data.new_password = hashed_password
     user_query.update({"password": user_data.new_password},

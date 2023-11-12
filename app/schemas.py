@@ -45,7 +45,6 @@ class UserCreate(User):
 
 
 class UserPassword(BaseModel):
-    email: EmailStr
     old_password: str
     new_password: str
     confirm_password: str
