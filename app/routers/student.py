@@ -24,7 +24,6 @@ def enroll_multiple_students(file: UploadFile, course_code:str = Form(),
         models.CourseInstructor.instructor_id == user.id).first()
     if not instructor:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-    print("here")
     
     csvReader = csv.DictReader(codecs.iterdecode(file.file, 'utf-8'))
     enrollments = []

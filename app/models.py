@@ -40,7 +40,9 @@ class Instructor(Base):
 class Course(Base):
     __tablename__ = "courses"
 
-    course_code = Column(String, primary_key=True, index=True)
+    course_id = Column(String, primary_key=True, index=True, unique=True)
+    course_code = Column(String, nullable=False)
+    session = Column(String, nullable=False)
     title = Column(String, nullable=False)
     description = Column(String, nullable=False)
     units = Column(Integer, nullable=False)
@@ -54,8 +56,10 @@ class Enrollment(Base):
     __tablename__ = "enrollments"
 
     id = Column(Integer, primary_key=True, index=True)
-    course_code = Column(String, ForeignKey(
-        "courses.course_code", ondelete="CASCADE"), nullable=False)
+    course_id = Column(String, ForeignKey(
+        "courses.course_id", ondelete="CASCADE"), nullable=False)
+    course_code = Column(String, nullable=False)
+    session = Column(String, nullable=False)
     reg_num = Column(BigInteger, nullable=False)
     accepted = Column(Boolean, server_default="FALSE", nullable=False)
 
@@ -65,8 +69,10 @@ class CourseInstructor(Base):
 
     instructor_id = Column(Integer, ForeignKey(
         "instructors.id", ondelete="CASCADE"), primary_key=True, nullable=False)
-    course_code = Column(String, ForeignKey(
-        "courses.course_code", ondelete="CASCADE"), primary_key=True, nullable=False)
+    course_id = Column(String, ForeignKey(
+        "courses.course_id", ondelete="CASCADE"), nullable=False)
+    course_code = Column(String, nullable=False)
+    session = Column(String, nullable=False)
     is_coordinator = Column(Boolean, server_default="FALSE", nullable=False)
     is_accepted = Column(Boolean, server_default="FALSE", nullable=False)
 

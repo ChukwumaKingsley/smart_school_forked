@@ -1,5 +1,6 @@
 from operator import or_
 import os
+import re
 import cloudinary.uploader
 from fastapi import FastAPI, File, Response, UploadFile, status, HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
@@ -31,6 +32,11 @@ def create_course(course: schemas.Course, db: Session = Depends(get_db),
     if exists:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail=f"course with code {course.course_code} already exists")
+    if not re.match(r'^[A-Za-z]{3} \d{3}$', course.course_code):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid course code")
+    if (course.semester == 1 and int(course.course_code[-1])%2 == 0) or (course.semester == 2 and int(course.course_code[-1])%2 == 1):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Course code last digit does not match semester.")
+
     new_course = models.Course(**course.dict())
 
     instructor = schemas.EnrollInstructor(course_code=course.course_code,
