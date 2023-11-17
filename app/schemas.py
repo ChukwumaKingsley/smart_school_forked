@@ -34,6 +34,7 @@ class User(BaseModel):
     email: EmailStr
     department: constr(max_length=3, min_length=3)
     faculty: str
+    level: Optional[int] = None
     major: Optional[str] = None
     bio: Optional[str] = None
 

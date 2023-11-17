@@ -13,6 +13,7 @@ class Student(Base):
     title = Column(String, nullable=False)
     name = Column(String, nullable=False)
     faculty = Column(String, nullable=False)
+    level = Column(String, nullable=False)
     department = Column(String(3), nullable=False)
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)

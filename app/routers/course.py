@@ -1,3 +1,4 @@
+from operator import or_
 import os
 import cloudinary.uploader
 from fastapi import FastAPI, File, Response, UploadFile, status, HTTPException, Depends, APIRouter
@@ -55,7 +56,11 @@ async def upload_photo(code: str, file: UploadFile = File(...),
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Access denied")
     course_query = db.query(models.Course).filter(
         models.Course.course_code == code)
-    response = cloudinary.uploader.upload(file.file)
+    response = cloudinary.uploader.upload(
+        file.file,
+        public_id="course-photo-"+code,
+        folder="FUTOAcademia-course-photo",
+        )
     image_url = response.get("secure_url")
     course_query.update({"course_photo_url": image_url},
                         synchronize_session=False)
@@ -84,13 +89,14 @@ def update_course(code: str, new_course: schemas.Course,
 @router.get("/", response_model=List[schemas.CourseOut])
 def get_courses(db: Session = Depends(get_db),
                 user: schemas.TokenUser = Depends(oauth2.get_current_user), semester: int = 1,
-                title: Optional[str] = None, faculty: Optional[str] = None, level: Optional[int] = None,
+                search: Optional[str] = None, faculty: Optional[str] = None, level: Optional[int] = None,
                 skip: int = 0, limit: int = 10):
     courses_query = db.query(models.Course).filter(
-        models.Course.semester == semester)
-    if title:
-        courses_query = courses_query.filter(
-            models.Course.title.contains(title))
+        models.Course.semester == semester) 
+    if search:
+        print(search)
+        courses_query = courses_query.filter(func.lower(models.Course.title).contains(search.lower()) | func.lower(models.Course.course_code).contains(search.lower())
+        )
     if faculty:
         courses_query = courses_query.filter(models.Course.faculty == faculty)
     if level:
@@ -133,7 +139,7 @@ def get_faculties(db: Session = Depends(get_db), user: schemas.TokenUser = Depen
     return faculties
 
 
-@router.get("/{code}", response_model=schemas.Course)
+@router.get("/{code}", response_model=schemas.CourseOut)
 def get_courses(code: str, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
     course = db.query(models.Course).filter(
         models.Course.course_code == code).first()
