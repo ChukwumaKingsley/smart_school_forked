@@ -56,10 +56,17 @@ async def upload_photo(code: str, file: UploadFile = File(...),
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Access denied")
     course_query = db.query(models.Course).filter(
         models.Course.course_code == code)
+    
+    transformation = {
+        "width": 400,  # Set the desired width
+        "height": 400,  # Set the desired height
+        "crop": "fill",  # Use 'fill' to fill the entire dimensions, maintaining aspect ratio
+    }
     response = cloudinary.uploader.upload(
         file.file,
         public_id="course-photo-"+code,
         folder="FUTOAcademia-course-photo",
+        transformation=transformation
         )
     image_url = response.get("secure_url")
     course_query.update({"course_photo_url": image_url},

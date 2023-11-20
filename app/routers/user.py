@@ -33,7 +33,8 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
     if user.id == None:
         if not existing_instructor_email and not existing_student_email:
-            new_user = models.Instructor(**user.dict())
+            user_data = user.dict(exclude_unset=True, exclude={"level"})
+            new_user = models.Instructor(**user_data)
         else:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account with this email already exists.")
     else:
