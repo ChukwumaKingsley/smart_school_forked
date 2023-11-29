@@ -1,11 +1,10 @@
-from operator import or_
 import os
 import cloudinary.uploader
 from fastapi import FastAPI, File, Response, UploadFile, status, HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from app import config
 # from sqlalchemy.sql.functions import func
@@ -31,7 +30,14 @@ def create_course(course: schemas.Course, db: Session = Depends(get_db),
     if exists:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail=f"course with code {course.course_code} already exists")
+    
+    # Trim the title element to keep only the first 60 characters
+    trimmed_title = course.title[:60].strip()
+    trimmed_description = course.description[:300].strip()
+
     new_course = models.Course(**course.dict())
+    new_course.title = trimmed_title
+    new_course.description = trimmed_description
 
     instructor = schemas.EnrollInstructor(course_code=course.course_code,
                                           instructor_id=user.id, is_coordinator=True, is_accepted=True)
@@ -41,6 +47,7 @@ def create_course(course: schemas.Course, db: Session = Depends(get_db),
     db.commit()
     db.refresh(new_course)
     return new_course
+
 
 
 @router.put("/{code}/photo", response_model=schemas.CourseOut, status_code=201)
@@ -86,6 +93,9 @@ def update_course(code: str, new_course: schemas.Course,
     if not instructor:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Access denied")
+    
+    new_course.title = new_course.title[:60].strip()
+    new_course.description = new_course.description[:300].strip()
     course_query = db.query(models.Course).filter(
         models.Course.course_code == code)
     course_query.update(new_course.dict(), synchronize_session=False)
@@ -101,7 +111,6 @@ def get_courses(db: Session = Depends(get_db),
     courses_query = db.query(models.Course).filter(
         models.Course.semester == semester) 
     if search:
-        print(search)
         courses_query = courses_query.filter(func.lower(models.Course.title).contains(search.lower()) | func.lower(models.Course.course_code).contains(search.lower())
         )
     if faculty:
@@ -155,6 +164,45 @@ def get_courses(code: str, db: Session = Depends(get_db), user: schemas.TokenUse
                             detail=f"course with code {code} already exists")
     return course
 
+@router.get("/{code}/enrollment_status")
+def get_enrollment_status(code: str, db: Session = Depends(get_db),
+                       user: schemas.TokenUser = Depends(oauth2.get_current_user)):
+    is_course_instructor = False
+    is_course_coordinator = False
+    is_enrolled = False
+    enrollment_pending = False
+    instructor_enrollment_pending = False
+
+    if user.is_instructor:
+        instructor = db.query(models.CourseInstructor).filter(
+            models.CourseInstructor.course_code == code,
+            models.CourseInstructor.instructor_id == user.id,
+            or_(models.CourseInstructor.is_coordinator == True, models.CourseInstructor.is_accepted == True)).first()
+        if db.query(models.CourseInstructor).filter(
+            models.CourseInstructor.course_code == code,
+            models.CourseInstructor.instructor_id == user.id,
+            models.CourseInstructor.is_coordinator == True).first():
+            is_course_coordinator = True
+        if db.query(models.CourseInstructor).filter(
+            models.CourseInstructor.course_code == code,
+            models.CourseInstructor.instructor_id == user.id, models.CourseInstructor.is_accepted == True).first():
+            is_course_instructor = True
+        if db.query(models.CourseInstructor).filter(
+            models.CourseInstructor.course_code == code,
+            models.CourseInstructor.instructor_id == user.id, models.CourseInstructor.is_accepted == False).first():
+            instructor_enrollment_pending = True
+        
+        if not instructor:
+            is_course_instructor = False
+            is_course_coordinator = False
+
+    if not user.is_instructor:
+        if db.query(models.Enrollment).filter(models.Enrollment.reg_num == user.id, models.Enrollment.course_code == code, models.Enrollment.accepted == True).first():
+            is_enrolled = True
+        if db.query(models.Enrollment).filter(models.Enrollment.reg_num == user.id, models.Enrollment.course_code == code, models.Enrollment.accepted == False).first():
+            enrollment_pending = True
+
+    return {"is_course_instructor": is_course_instructor, "is_course_coordinator": is_course_coordinator, "instructor_enrollment_pending": instructor_enrollment_pending, "is_enrolled": is_enrolled, "enrollment_pending": enrollment_pending}
 
 @router.get("/{code}/assessments", response_model=List[schemas.AssessmentOut])
 def get_all_assessment(code: str, is_active: bool = None, is_marked: bool = None, db: Session = Depends(get_db),

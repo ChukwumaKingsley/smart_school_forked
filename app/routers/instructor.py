@@ -15,6 +15,13 @@ router = APIRouter(
     tags=['EnrollInstructors']
 )
 
+@router.get("/count/{course_code}", response_model=int)
+def get_instructors_count(course_code: str, db: Session = Depends(get_db)):
+    instructors_count = db.query(func.count(models.CourseInstructor.instructor_id)).filter(
+        models.CourseInstructor.course_code == course_code,
+        (models.CourseInstructor.is_coordinator == True) | (models.CourseInstructor.is_accepted == True)
+    ).scalar()
+    return instructors_count
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.EnrollInstructor)
 def enroll_instructor(course_code: str = Form(),

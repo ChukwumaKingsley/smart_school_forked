@@ -38,13 +38,24 @@ def create_instructions(instructions:schemas.Instructions, user:schemas.TokenUse
     db.commit()
     return Response(status_code=status.HTTP_201_CREATED)
 
+
+@router.get("/{assessment_id}", response_model=List[schemas.InstructionOut])
+def get_instructions(assessment_id: int, db: Session = Depends(get_db), user:schemas.TokenUser=Depends(oauth2.get_current_user)):
+    assessment = db.query(models.Assessment).filter(models.Assessment.id == assessment_id).first()
+    if not assessment:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+
+    instructions = db.query(models.Instruction).filter(models.Instruction.assessment_id == assessment_id).all()
+
+    return instructions
+
 @router.put("/{id}",)
-def update_instruction(id: int,instruction:schemas.Instruction, user:schemas.TokenUser=Depends(oauth2.get_current_user),
+def update_instruction(id: int, instruction:schemas.Instruction, user:schemas.TokenUser=Depends(oauth2.get_current_user),
                     db:Session=Depends(get_db)):
     instruction_query = db.query(models.Instruction).filter(models.Instruction.id == id)
     if not instruction_query.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="answer not found")
+                            detail="Instruction not found")
     instructor = instructor = db.query(models.Instruction).join(
         models.Assessment, models.Instruction.assessment_id == models.Assessment.id).join(
         models.CourseInstructor, models.Assessment.course_id == models.CourseInstructor.course_code).filter(

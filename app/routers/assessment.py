@@ -37,7 +37,7 @@ def create_assessment(assessment: schemas.Assessment, db: Session = Depends(get_
     return new_assessment
 
 
-@router.put("/{id}", response_model=schemas.AssessmentReview)
+@router.put("/{id}", response_model=schemas.AssessmentOut)
 def update_assessment(updated_assessment: schemas.Assessment, id: int, db: Session = Depends(get_db),
                       user: schemas.TokenUser = Depends(oauth2.get_current_user)):
     instructor = db.query(models.CourseInstructor).filter(
@@ -56,9 +56,24 @@ def update_assessment(updated_assessment: schemas.Assessment, id: int, db: Sessi
                             detail=f"assessment with id -> {id} not found")
 
     current_time = datetime.now()
-    if assessment_detail.start_date < (current_time + timedelta(minutes=20)):
+    if updated_assessment.start_date < (current_time):
         raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
-                            detail="cannot update already started, ended assessments or update 15 minutes before start time")
+                            detail="Start date/time must be in the future")
+    if updated_assessment.end_date < updated_assessment.start_date:
+        raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+                            detail="End date/time must be after start date")
+    if (assessment_detail.is_active and assessment_detail.start_date < (current_time + timedelta(minutes=10))):
+        raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+                            detail="Cannot edit assessment 10 minutes before it starts.")
+    
+    if assessment_detail.is_marked:
+        raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+                            detail="Cannot edit edited assessments")
+    
+    if (not assessment_detail.is_active and assessment_detail.start_date < (current_time + timedelta(minutes=20))):
+        raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+                            detail="Start time must be at least 20 minutes from now.")
+    
     assessment_query.update(updated_assessment.dict(),
                             synchronize_session=False)
     db.commit()

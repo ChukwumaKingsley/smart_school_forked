@@ -105,6 +105,18 @@ class EnrollStudentOut(EnrollStudent):
     class Config:
         orm_mode = True
 
+class IsEnrolled(BaseModel):
+    enrolled: bool
+
+class StudentsEnrolled(BaseModel):
+    reg_num: int
+    name: str
+    department: str
+    level: str
+    accepted: bool
+
+    class Config: 
+        orm_mode: True
 
 class Assessment(BaseModel):
 
