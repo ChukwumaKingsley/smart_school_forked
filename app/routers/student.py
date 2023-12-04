@@ -33,15 +33,15 @@ def get_enrolled_students_counts(course_code: str, db: Session = Depends(get_db)
 @router.get("/enrolled/{course_code}", response_model=List[schemas.StudentsEnrolled])
 def get_enrolled_students(course_code: str, db: Session = Depends(get_db), user: schemas.TokenData = Depends(oauth2.get_current_user), search: Optional[str] = None, level: Optional[str] = None):
 
-    # Check if the user is an instructor for the course
-    instructor_query = db.query(models.CourseInstructor).filter(
-        models.CourseInstructor.course_code == course_code,
-        models.CourseInstructor.instructor_id == user.id,
-        models.CourseInstructor.is_accepted == True
-    ).first()
+    # # Check if the user is an instructor for the course
+    # instructor_query = db.query(models.CourseInstructor).filter(
+    #     models.CourseInstructor.course_code == course_code,
+    #     models.CourseInstructor.instructor_id == user.id,
+    #     models.CourseInstructor.is_accepted == True
+    # ).first()
     
-    if not instructor_query:
-        raise HTTPException(status_code=403, detail="Access denied")
+    # if not instructor_query:
+    #     raise HTTPException(status_code=403, detail="Access denied")
 
     # Fetch all students' information, both accepted and unaccepted
     requests_query = db.query(models.Enrollment).filter(

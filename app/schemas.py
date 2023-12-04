@@ -99,6 +99,9 @@ class EnrollStudent(BaseModel):
     accepted: Optional[bool] = False
 
 
+class EnrollInstructor(BaseModel):
+    course_code: str
+
 class EnrollStudentOut(EnrollStudent):
     id: int
 
@@ -116,6 +119,16 @@ class StudentsEnrolled(BaseModel):
     accepted: bool
 
     class Config: 
+        orm_mode: True
+
+class CourseInstructorEnrolledOut(BaseModel):
+    instructor_id: int
+    is_current_user: bool
+    department: str
+    name: str
+    title: str
+
+    class Config:
         orm_mode: True
 
 class Assessment(BaseModel):
