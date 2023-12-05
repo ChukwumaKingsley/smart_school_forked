@@ -83,6 +83,7 @@ class Assessment(Base):
     assessment_type = Column(String, nullable=True)
     is_active = Column(Boolean, server_default="FALSE", nullable=False)
     is_marked = Column(Boolean, server_default="FALSE", nullable=False)
+    is_completed = Column(Boolean, server_default="FALSE", nullable=False)
     course_id = Column(String, ForeignKey(
         "courses.course_code", ondelete="CASCADE"), nullable=False)
 

@@ -10,12 +10,26 @@ from .. import models, schemas, oauth2
 from datetime import timedelta, datetime
 from ..database import get_db
 from ..config import settings
+from datetime import datetime
+from fastapi import BackgroundTasks
 
 
 router = APIRouter(
     prefix="/assessments",
     tags=['Assessments']
 )
+
+
+def get_current_datetime():
+    return datetime.now()
+
+def update_assessment_status(db: Session, assessment_id: int, background_tasks: BackgroundTasks):
+    assessment = db.query(models.Assessment).filter(models.Assessment.id == assessment_id).first()
+    if assessment and assessment.is_active and assessment.end_date < get_current_datetime():
+        assessment.is_active = False
+        assessment.is_completed = True
+        db.commit()
+
 
 
 @router.post("/", response_model=schemas.AssessmentOut)
@@ -30,6 +44,13 @@ def create_assessment(assessment: schemas.Assessment, db: Session = Depends(get_
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Access denied")
 
     # only create assessment two hours into the future
+    current_time = datetime.now()
+    if assessment.start_date < current_time:
+        raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED, detail="Start date/time should be in the future.")
+    
+    if assessment.start_date <= assessment.end_date:
+        raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED, detail="End date/time should be later than start date/time.")
+
     new_assessment = models.Assessment(**assessment.dict())
     db.add(new_assessment)
     db.commit()
@@ -44,7 +65,6 @@ def update_assessment(updated_assessment: schemas.Assessment, id: int, db: Sessi
         models.CourseInstructor.course_code == updated_assessment.course_id,
         models.CourseInstructor.is_accepted == True,
         models.CourseInstructor.instructor_id == user.id).first()
-
     if not instructor:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Access denied")
@@ -81,8 +101,44 @@ def update_assessment(updated_assessment: schemas.Assessment, id: int, db: Sessi
     return assessment_query.first()
 
 
+@router.put("/edit-schedule/{id}", response_model=schemas.AssessmentOut)
+def edit_schedule(updated_assessment: schemas.AssessmentSchedule, id: int, db: Session = Depends(get_db),
+                      user: schemas.TokenUser = Depends(oauth2.get_current_user)):
+    instructor = db.query(models.CourseInstructor).filter(
+        models.CourseInstructor.course_code == updated_assessment.course_id,
+        models.CourseInstructor.is_accepted == True,
+        models.CourseInstructor.instructor_id == user.id).first()
+    if not instructor:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Access denied")
+    assessment_query = db.query(models.Assessment).filter(
+        models.Assessment.id == id)
+    assessment_detail = assessment_query.first()
+    if not assessment_detail:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"assessment with not found")
+
+    current_time = datetime.now()
+
+    if (updated_assessment.start_date < current_time):
+        raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED, detail="Start date/time must be in the future.")
+    
+    if (assessment_detail.is_active and assessment_detail.start_date - current_time < 0):
+        raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED, detail="Cannot edit schedule of live assessment.")
+    
+    if (assessment_detail.is_completed or assessment_detail.is_marked):
+        raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED, detail="Cannot edit schedule of ended assessment.")
+    
+    if (updated_assessment.start_date >= updated_assessment.end_date):
+        raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED, detail="End date should be later than start date.")
+    
+    assessment_query.update(updated_assessment.dict(), synchronize_session=False)
+    db.commit()
+    db.refresh(assessment_query.first())
+    return assessment_query.first()
+
 @router.put("/{id}/activate", status_code=status.HTTP_201_CREATED)
-def update_assessment(id: int, db: Session = Depends(get_db),
+def activate_assessment(id: int, db: Session = Depends(get_db),
                       user: schemas.TokenUser = Depends(oauth2.get_current_user)):
     instructor = db.query(models.Assessment).join(
         models.CourseInstructor, models.CourseInstructor.course_code == models.Assessment.course_id
@@ -284,6 +340,9 @@ def get_assessment(id: int, db: Session = Depends(get_db),
 @router.get("/{id}/results", response_model=List[schemas.AssessmentResults])
 def get_assessment_results(id: int, name: Optional[str] = None, db: Session = Depends(get_db),
                            user: schemas.TokenUser = Depends(oauth2.get_current_user)):
+    
+    update_assessment_status(db = Depends(get_db), assessment_id=id, background_tasks=BackgroundTasks)
+
     if user.is_instructor:
         instructor = db.query(models.Assessment).join(
             models.CourseInstructor, models.Assessment.course_id == models.CourseInstructor.course_code
@@ -313,6 +372,9 @@ def get_assessment_results(id: int, name: Optional[str] = None, db: Session = De
 @router.get("/{id}/stu_results", response_model=schemas.StuAssessmentReview)
 def get_assessment_results(id: int, db: Session = Depends(get_db),
                            user: schemas.TokenUser = Depends(oauth2.get_current_user)):
+
+    update_assessment_status(db = Depends(get_db), assessment_id=id, background_tasks=BackgroundTasks)
+
     if user.is_instructor:
         instructor = db.query(models.Assessment).join(
             models.CourseInstructor, models.Assessment.course_id == models.CourseInstructor.course_code

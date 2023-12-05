@@ -132,7 +132,6 @@ class CourseInstructorEnrolledOut(BaseModel):
         orm_mode: True
 
 class Assessment(BaseModel):
-
     title: str
     start_date: datetime
     duration: int
@@ -156,6 +155,12 @@ class Assessment(BaseModel):
     #         if 'start_date' in values and v <= values['start_date']:
     #             raise ValueError('end_date should be greater than start_date')
     #     return v
+
+class AssessmentSchedule(BaseModel):
+    start_date: datetime
+    duration: int
+    end_date: datetime
+    course_id: str
 
 
 class AssessmentOut(Assessment):
