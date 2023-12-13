@@ -1,7 +1,5 @@
-from typing import List
-from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, BigInteger, DateTime, UniqueConstraint, CheckConstraint
+from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, BigInteger, DateTime, UniqueConstraint
 from sqlalchemy.orm import relationship
-from sqlalchemy.orm import Mapped
 
 from .database import Base
 
@@ -171,5 +169,15 @@ class Total(Base):
         "assessments.id", ondelete="CASCADE"), nullable=False)
     total = Column(Float, nullable=False)
 
-    __table_args__ = (UniqueConstraint('assessment_id', 'student_id', name='_assessment_student_uc'),
-                      )
+    __table_args__ = (UniqueConstraint('assessment_id', 'student_id', name='_assessment_student_uc'),)
+
+
+class AssessmentTimeRecords(Base):
+
+    __tablename__ = "assessment time records"
+
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(BigInteger, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    assessment_id = Column(Integer, ForeignKey("assessments.id", ondelete="CASCADE"), nullable=False)
+    start_datetime = Column(DateTime)
+    end_datetime = Column(DateTime)
