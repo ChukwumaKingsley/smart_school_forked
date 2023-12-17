@@ -10,7 +10,7 @@ from app import config
 
 from . import models
 from .database import engine
-from .routers import course, user, auth, student, instructor, assessment, question, answer, submission, instruction, mark
+from .routers import course, user, auth, student, instructor, assessment, question, answer, submission, instruction, mark, assessment_times
 # from .config import settings
 
 
@@ -55,6 +55,7 @@ app.include_router(question.router)
 app.include_router(answer.router)
 app.include_router(submission.router)
 app.include_router(mark.router)
+app.include_router(assessment_times.router)
 
 
 @app.get("/")
