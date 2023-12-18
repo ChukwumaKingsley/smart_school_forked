@@ -35,7 +35,7 @@ def create_assessment(assessment: schemas.Assessment, db: Session = Depends(get_
     if assessment.start_date < current_time:
         raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED, detail="Start date/time should be in the future.")
     
-    if assessment.start_date <= assessment.end_date:
+    if assessment.start_date >= assessment.end_date:
         raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED, detail="End date/time should be later than start date/time.")
 
     new_assessment = models.Assessment(**assessment.dict())
@@ -112,6 +112,8 @@ def activate_assessment(id: int, db: Session = Depends(get_db),
         models.CourseInstructor, models.CourseInstructor.course_code == models.Assessment.course_id
     ).filter(models.CourseInstructor.is_accepted == True,
              models.CourseInstructor.instructor_id == user.id, models.Assessment.id == id).first()
+    
+    questions = db.query(models.Question).filter(models.Question.assessment_id == id).all()
 
     if not instructor:
         raise HTTPException(
@@ -123,6 +125,8 @@ def activate_assessment(id: int, db: Session = Depends(get_db),
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"assessment not found")
     current_time = datetime.now()
+    if not questions:
+        raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED, detail="Assessment must have at least one question")
     if assessment_detail.start_date < (current_time):
         raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
                             detail="Update start date/time to a later date/time")
@@ -266,8 +270,14 @@ def get_assessment_questions(id: int, db: Session = Depends(get_db),
         submission = db.query(models.Submission).filter(models.Submission
                                                         .assessment_id == id, models.Submission.student_id == user.id).first()
         if submission:
-            raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
-                                detail="Your submission for this assessment has been recorded")
+            assessment = db.query(models.Assessment).options(
+                joinedload(models.Assessment.instructions)).filter(
+                models.Assessment.id == id).first()
+            assessment.questions = []
+            assessment_dict = jsonable_encoder(assessment)
+
+            return assessment_dict
+            
     assessment = db.query(models.Assessment).options(
         joinedload(models.Assessment.instructions)).options(
         joinedload(models.Assessment.questions)).options(

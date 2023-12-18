@@ -2,6 +2,8 @@ from fastapi import FastAPI, Form, Response, status, HTTPException, Depends, API
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from fastapi.encoders import jsonable_encoder
+from datetime import datetime
+
 
 from sqlalchemy import func
 # from sqlalchemy.sql.functions import func
@@ -40,8 +42,8 @@ def make_submission(submissions: schemas.Submissions,
     sub_query = db.query(models.Submission).filter(models.Submission.assessment_id == submissions.assessment_id,
                                                    models.Submission.student_id == user.id)
     if sub_query.first() != None:
-        raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
-                            detail="your previous submission has been recorded")
+        return Response(status_code=status.HTTP_201_CREATED)
+    
     submission_df: pd.DataFrame = pd.DataFrame(
         jsonable_encoder(submissions.submissions),)
     print(submission_df)
@@ -60,6 +62,12 @@ def make_submission(submissions: schemas.Submissions,
         submission = models.Submission(
             **response, student_id=user.id, assessment_id=submissions.assessment_id)
         stu_subs.append(submission)
+
+    assessment_times = db.query(models.AssessmentTimeRecords).filter(models.AssessmentTimeRecords.assessment_id == submissions.assessment_id, models.AssessmentTimeRecords.student_id == user.id).first()
+
+    assessment_times.end_datetime = datetime.now()
+
     db.add_all(stu_subs)
     db.commit()
+    db.refresh(assessment_times)
     return Response(status_code=status.HTTP_201_CREATED)
