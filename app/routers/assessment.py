@@ -141,9 +141,16 @@ def deactivate_assessment(id: int, db: Session = Depends(get_db),
     
     assessment_query = db.query(models.Assessment).filter(
         models.Assessment.id == id).first()
-    assessment_query.update({"is_active": False},
-                            synchronize_session=False)
+    
+    if not assessment_query:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assessment not found.")
+    
+    if datetime.now() > assessment_query.start_date:
+        raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED, detail="Assessment has already started.")
+    assessment_query.is_active = False
+
     db.commit()
+    db.refresh(assessment_query)
     return
 
 @router.put("/{id}/end-automatic", status_code=status.HTTP_201_CREATED)
@@ -168,6 +175,12 @@ def end_assessment_automatic(id: int, db: Session = Depends(get_db),
     
     assessment_query = db.query(models.Assessment).filter(
         models.Assessment.id == id)
+    
+    if not assessment_query.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assessment not found.")
+    
+    if assessment_query.first().start_date >= datetime.now():
+        raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED, detail="Assessment cannot be ended until it has started.")
     
     assessment_query.update({"is_active": False, "is_completed": True},
                             synchronize_session=False)
