@@ -205,7 +205,7 @@ def get_enrollment_status(code: str, db: Session = Depends(get_db),
     return {"is_course_instructor": is_course_instructor, "is_course_coordinator": is_course_coordinator, "instructor_enrollment_pending": instructor_enrollment_pending, "is_enrolled": is_enrolled, "enrollment_pending": enrollment_pending}
 
 @router.get("/{code}/assessments", response_model=List[schemas.AssessmentOut])
-def get_all_assessment(code: str, is_active: bool = None, is_marked: bool = None, db: Session = Depends(get_db),
+def get_all_assessment(code: str, is_active: bool = None, is_marked: bool = None, is_completed: bool = None, db: Session = Depends(get_db),
                        user: schemas.TokenUser = Depends(oauth2.get_current_user)):
     if user.is_instructor:
         instructor = db.query(models.CourseInstructor).filter(
@@ -223,15 +223,66 @@ def get_all_assessment(code: str, is_active: bool = None, is_marked: bool = None
         models.Assessment.course_id == code)
     current_time = datetime.now()
     if is_active != None:
-        assessment = assessment_query.filter(
-            models.Assessment.is_active == is_active, models.Assessment.end_date < current_time).all()
-    if is_marked == True:
-        assessment = assessment_query.filter(
-            models.Assessment.is_marked == True).all()
-    else:
-        assessment = assessment_query.all()
+        assessment_query = assessment_query.filter(
+            models.Assessment.is_active == is_active, models.Assessment.end_date < current_time)
+    if is_marked != None:
+        assessment_query = assessment_query.filter(
+            models.Assessment.is_marked == is_marked)
+    if is_completed != None:
+        assessment_query = assessment_query.filter(
+            models.Assessment.is_completed == is_completed)
+        
+    assessment = assessment_query.all()
     return assessment
 
+@router.get("/assessments_results_stats/{course_code}")
+def get_course_assessment_stats(course_code: str, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
+    if not user.is_instructor:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized.")
+
+    # Check if the course exists
+    course = db.query(models.Course).filter(models.Course.course_code == course_code).first()
+    if not course:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+
+    # Get all assessments for the course
+    assessments = db.query(models.Assessment).filter(models.Assessment.course_id == course_code).all()
+
+    assessment_stats = []
+    for assessment in assessments:
+        # Calculate statistics for each assessment
+        num_students = db.query(models.Score).filter(models.Score.assessment_id == assessment.id).distinct(models.Score.student_id).count()
+        avg_score = db.query(func.avg(models.Total.total)).filter(models.Total.assessment_id == assessment.id).scalar()
+        avg_time_query = db.query(func.avg(models.AssessmentTimeRecords.end_datetime - models.AssessmentTimeRecords.start_datetime)).filter(models.AssessmentTimeRecords.assessment_id == assessment.id)
+        avg_time_seconds = avg_time_query.scalar() if avg_time_query.scalar() else 0
+        highest_score = db.query(func.max(models.Total.total)).filter(models.Total.assessment_id == assessment.id).scalar()
+        lowest_score = db.query(func.min(models.Total.total)).filter(models.Total.assessment_id == assessment.id).scalar()
+
+        # Additional statistics
+        total_mark = assessment.total_mark
+        avg_score_percentage = (avg_score / total_mark) * 100 if avg_score is not None else 0
+
+        # Calculate the percentage of students enrolled in the course that made submissions
+        num_enrolled_students = db.query(models.Enrollment).filter(models.Enrollment.course_code == course_code, models.Enrollment.accepted.is_(True)).count()
+        percentage_submissions = (num_students / num_enrolled_students) * 100 if num_enrolled_students > 0 else 0
+
+        # Note: You need to add logic for calculating the most frequent score based on your data model.
+
+        assessment_stats.append({
+            "id": assessment.id,
+            "title": assessment.title,
+            "type": assessment.assessment_type,
+            "num_students": num_students,
+            "avg_score": round(avg_score, 1),
+            "avg_score_percentage": round(avg_score_percentage, 1),
+            "avg_time": round(avg_time_seconds.total_seconds()/60, 1),
+            "highest_score": highest_score,
+            "lowest_score": lowest_score,
+            "percentage_submissions": round(percentage_submissions, 1),
+            # Add other statistics as needed
+        })
+
+    return assessment_stats
 
 @router.delete("/{code}", status_code=204)
 def delete_courses(code: str, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):

@@ -168,7 +168,7 @@ def process_multi_nlp(df: pd.DataFrame, assessment_id):
     return score_df
 
 
-def mark_single_nlp(df: pd.DataFrame, assessment_id):
+def mark_single_nlpxxxx(df: pd.DataFrame, assessment_id):
     print("marking singe")
     score_df: pd.DataFrame = pd.DataFrame(
         columns=['assessment_id', 'question_id', 'student_id', 'ref_answer', 'stu_answer', 'mark', 'score'])
@@ -192,6 +192,35 @@ def mark_single_nlp(df: pd.DataFrame, assessment_id):
     score_df = score_df[['assessment_id',
                          'question_id', 'student_id', 'score']]
     return score_df
+
+def mark_single_nlp(df: pd.DataFrame, assessment_id):
+    print("marking singe")
+    score_df: pd.DataFrame = pd.DataFrame(
+        columns=['assessment_id', 'question_id', 'student_id', 'ref_answer', 'stu_answer', 'mark', 'score'])
+    questions = df["question_id"].unique().tolist()
+    users = df["student_id"].unique().tolist()
+    for question_id in questions:
+        ref_answer = df[df['question_id'] == question_id]['ref_answer'].iloc[0]
+        student_answers = df[df['question_id'] ==
+                             question_id][['stu_answer', 'student_id', 'mark']]
+        answers = student_answers['stu_answer'].tolist()
+        ids = student_answers['student_id'].tolist()
+        marks = student_answers['mark'].tolist()
+        scores = predict_nlp(ref_answer, answers)
+        print(answers, ids, marks, scores)
+        for i, id in enumerate(ids):
+            print(i, id)
+            row = {"assessment_id": assessment_id, "question_id": question_id, "student_id": id,
+                   'ref_answer': ref_answer, 'stu_answer': answers[i], 'mark': marks[i], "score": scores[i]}
+            new_df = pd.DataFrame([row])
+            score_df = pd.concat([score_df, new_df], axis=0, ignore_index=True)
+    score_df['score'] = score_df['score'].map(utils.score_mapping)
+    score_df['score'] = score_df['score'] * score_df['mark']
+    score_df = score_df[['assessment_id',
+                         'question_id', 'student_id', 'score']]
+    return score_df
+
+
 
 
 def predict_nlp(ref_answer: str, stu_answers: List[str]):

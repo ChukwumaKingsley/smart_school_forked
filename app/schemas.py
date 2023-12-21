@@ -292,6 +292,9 @@ class AssessmentResults(BaseModel):
     reg_num: int
     total: float
     photo_url: str = None
+    start_datetime: datetime
+    end_datetime: datetime
+    assessment_time: int
 
     class Config:
         orm_mode = True

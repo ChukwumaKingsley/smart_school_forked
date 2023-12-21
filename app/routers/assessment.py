@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from sqlalchemy.orm import joinedload, subqueryload, contains_eager
 
-from sqlalchemy import func
+from sqlalchemy import String, and_, cast, extract, func, or_
 # from sqlalchemy.sql.functions import func
 from .. import models, schemas, oauth2
 from datetime import timedelta, datetime
@@ -271,15 +271,6 @@ def get_assessment_questions(id: int, db: Session = Depends(get_db),
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
         # # only view question in period of exam
         current_time = datetime.now()
-        # if not ((current_time <= assessment_detail.end_date) and (current_time > assessment_detail.start_date)):
-        #     raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
-        #                         detail=f"test has either ended or not started at this time:{current_time}")
-        # if assessment_detail.start_date > current_time:
-        #     raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
-        #                         detail=f"test is yet to start")
-        # if current_time > assessment_detail.end_date:
-        #     raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
-        #                         detail=f"test is has ended")
         submission = db.query(models.Submission).filter(models.Submission
                                                         .assessment_id == id, models.Submission.student_id == user.id).first()
         if submission:
@@ -369,7 +360,7 @@ def get_assessment(id: int, db: Session = Depends(get_db),
 
 
 @router.get("/{id}/results", response_model=List[schemas.AssessmentResults])
-def get_assessment_results(id: int, name: Optional[str] = None, db: Session = Depends(get_db),
+def get_assessment_results(id: int, search: Optional[str] = None, db: Session = Depends(get_db),
                            user: schemas.TokenUser = Depends(oauth2.get_current_user)):
     
     if user.is_instructor:
@@ -380,21 +371,46 @@ def get_assessment_results(id: int, name: Optional[str] = None, db: Session = De
         if not instructor:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     if not user.is_instructor:
-        student = db.query(models.Assessment).join(
-            models.Enrollment, models.Assessment.course_id == models.Enrollment.course_code
-        ).filter(models.Enrollment.reg_num == user.id, models.Assessment.id == id).first()
-        if not student:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
-    total_query = db.query(models.Enrollment.reg_num, models.Total.total, models.Student.name,
-                           models.Student.photo_url).join(
-        models.Total, models.Enrollment.reg_num == models.Total.student_id,).join(models.Student,
-                                                                                  models.Total.student_id == models.Student.id).filter(
+    total_query = db.query(
+        models.Enrollment.reg_num, 
+        models.Total.total,
+        models.Student.name,
+        models.Student.photo_url,
+        models.AssessmentTimeRecords.start_datetime.label("start_datetime"),
+        models.AssessmentTimeRecords.end_datetime,
+        func.coalesce(
+            (
+                extract('epoch', models.AssessmentTimeRecords.end_datetime)
+                - extract('epoch', models.AssessmentTimeRecords.start_datetime)
+            ) / 60,
+            0
+        ).label('assessment_time')
+    ).join(
+        models.Total, models.Enrollment.reg_num == models.Total.student_id,
+    ).join(
+        models.Student, models.Total.student_id == models.Student.id
+    ).outerjoin(
+        models.AssessmentTimeRecords,
+        and_(
+            models.AssessmentTimeRecords.student_id == models.Total.student_id,
+            models.AssessmentTimeRecords.assessment_id == models.Total.assessment_id
+        )
+    ).filter(
         models.Total.assessment_id == id
-    ).order_by(models.Total.total.desc())
-    if name != None:
-        total_query = total_query.filter(
-            models.Student.name.contains(name))
+    ).order_by(
+        models.Student.name.asc()
+    ).distinct()
+
+
+    if search != None:
+        total_query = total_query.filter(or_(
+            func.lower(models.Student.name).contains(search.lower()), 
+            cast(models.Student.id, String).contains(search.lower())
+        ))
+
+
     return total_query.all()
 
 
@@ -415,13 +431,6 @@ def get_assessment_results(id: int, db: Session = Depends(get_db),
         ).filter(models.Enrollment.reg_num == user.id, models.Assessment.id == id).first()
         if not student:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-
-    # total = db.query(models.Enrollment.reg_num, models.Total.total, models.Student.name,
-    #                  models.Student.photo_url).join(
-    #     models.Total, models.Enrollment.reg_num == models.Total.student_id).join(models.Student,
-    #                                                                               models.Total.student_id == models.Student.id).filter(
-    #     models.Total.assessment_id == id, models.Total.student_id == user.id
-    # ).all()
     total = db.query(models.Total).filter(models.Total.assessment_id == id,
                                           models.Total.student_id == user.id).first()
     submissions = db.query(models.Submission).filter(models.Submission.assessment_id == id,
@@ -454,3 +463,43 @@ def get_assessment_results(id: int, db: Session = Depends(get_db),
                 assessment_dict['questions'][i]['stu_mark'] = score['score']
     assessment_dict['total'] = total_dict['total']
     return assessment_dict
+
+@router.get("/stats/{assessment_id}")
+def get_assessment_stats(assessment_id: int, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
+    # Check if the assessment exists
+    assessment = db.query(models.Assessment).filter(models.Assessment.id == assessment_id).first()
+
+    if not user.is_instructor:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized.")
+    if not assessment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assessment not found")
+    
+    # Calculate the statistics
+    num_students = db.query(models.Score).filter(models.Score.assessment_id == assessment_id).distinct(models.Score.student_id).count()
+    avg_score = db.query(func.avg(models.Total.total)).filter(models.Total.assessment_id == assessment_id).scalar()
+    avg_time_query = db.query(func.avg(models.AssessmentTimeRecords.end_datetime - models.AssessmentTimeRecords.start_datetime)).filter(models.AssessmentTimeRecords.assessment_id == assessment_id)
+    avg_time = avg_time_query.scalar() if avg_time_query.scalar() else 0
+    highest_score = db.query(func.max(models.Total.total)).filter(models.Total.assessment_id == assessment_id).scalar()
+    lowest_score = db.query(func.min(models.Total.total)).filter(models.Total.assessment_id == assessment_id).scalar()
+
+    # Additional statistics
+    total_mark = assessment.total_mark
+    avg_score_percentage = (avg_score / total_mark) * 100 if avg_score is not None else 0
+
+    # Calculate the percentage of students enrolled in the course that made submissions
+    num_enrolled_students = db.query(models.Enrollment).filter(models.Enrollment.course_code == assessment.course_id, models.Enrollment.accepted.is_(True)).count()
+    percentage_submissions = (num_students / num_enrolled_students) * 100 if num_enrolled_students > 0 else 0
+    
+    # Note: You need to add logic for calculating the most frequent score based on your data model.
+
+    return {
+        "num_students": num_students,
+        "avg_score": round(avg_score, 1),
+        "total_possible_score": total_mark,
+        "avg_score_percentage": round(avg_score_percentage, 1),
+        "avg_time": round(avg_time.total_seconds()/60, 1),
+        "highest_score": highest_score,
+        "lowest_score": lowest_score,
+        "percentage_submissions": round(percentage_submissions, 1),
+        # Add other statistics as needed
+    }
