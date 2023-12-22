@@ -61,6 +61,7 @@ def get_enrolled_students(course_code: str, db: Session = Depends(get_db), user:
         models.Student.id.label("reg_num"),
         models.Student.name,
         models.Student.department,
+        models.Student.photo_url,
         models.Student.level,
         models.Enrollment.accepted
     ).all()
@@ -69,6 +70,7 @@ def get_enrolled_students(course_code: str, db: Session = Depends(get_db), user:
         student_dict = {
         'reg_num': student.reg_num,
         'name': student.name,
+        'photo_url': student.photo_url,
         'department': student.department,
         'level': student.level,
         'accepted': student.accepted,
@@ -110,6 +112,7 @@ def get_enrollment_students_requests(course_code: str, db: Session = Depends(get
         models.Student.id.label("reg_num"),
         models.Student.name,
         models.Student.department,
+        models.Student.photo_url,
         models.Student.level,
         models.Enrollment.accepted
     ).all()
@@ -118,6 +121,7 @@ def get_enrollment_students_requests(course_code: str, db: Session = Depends(get
         student_dict = {
         'reg_num': student.reg_num,
         'name': student.name,
+        'photo_url': student.photo_url,
         'department': student.department,
         'level': student.level,
         'accepted': student.accepted,

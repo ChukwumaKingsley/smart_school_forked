@@ -63,6 +63,7 @@ def get_course_coordinators(course_code: str, db: Session = Depends(get_db), use
         models.Instructor.department,
         models.Instructor.title,
         models.Instructor.name,
+        models.Instructor.photo_url,
         case((models.CourseInstructor.instructor_id == user.id, literal(True)), else_=literal(False)).label("is_current_user")
         ).filter(
         models.CourseInstructor.course_code == course_code,
@@ -75,6 +76,7 @@ def get_course_coordinators(course_code: str, db: Session = Depends(get_db), use
         'name': coordinator.name,
         'department': coordinator.department,
         'title': coordinator.title,
+        'photo_url': coordinator.photo_url,
         'is_current_user': coordinator.is_current_user,
     }
         return coordinator_dict
@@ -91,6 +93,7 @@ def get_course_instructors(course_code: str, db: Session = Depends(get_db), user
         models.Instructor.department,
         models.Instructor.title,
         models.Instructor.name,
+        models.Instructor.photo_url,
         case((models.CourseInstructor.instructor_id == user.id, literal(True)), else_=literal(False)).label("is_current_user")
         ).filter(
         models.CourseInstructor.course_code == course_code,
@@ -104,6 +107,7 @@ def get_course_instructors(course_code: str, db: Session = Depends(get_db), user
         'name': instructor.name,
         'department': instructor.department,
         'title': instructor.title,
+        'photo_url': instructor.photo_url,
         'is_current_user': instructor.is_current_user,
     }
         return instructor_dict
@@ -120,6 +124,7 @@ def get_course_instructors_join_request(course_code: str, db: Session = Depends(
         models.Instructor.department,
         models.Instructor.title,
         models.Instructor.name,
+        models.Instructor.photo_url,
         case((models.CourseInstructor.instructor_id == user.id, literal(True)), else_=literal(False)).label("is_current_user")
         ).filter(
         models.CourseInstructor.course_code == course_code,
@@ -133,6 +138,7 @@ def get_course_instructors_join_request(course_code: str, db: Session = Depends(
         'name': instructor.name,
         'department': instructor.department,
         'title': instructor.title,
+        'photo_url': instructor.photo_url,
         'is_current_user': instructor.is_current_user,
     }
         return instructor_dict

@@ -117,6 +117,7 @@ class StudentsEnrolled(BaseModel):
     department: str
     level: str
     accepted: bool
+    photo_url: str
 
     class Config: 
         orm_mode: True
@@ -127,6 +128,7 @@ class CourseInstructorEnrolledOut(BaseModel):
     department: str
     name: str
     title: str
+    photo_url: str
 
     class Config:
         orm_mode: True
