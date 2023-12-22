@@ -4,7 +4,7 @@ from fastapi import FastAPI, File, Response, UploadFile, status, HTTPException, 
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from sqlalchemy import func, or_
+from sqlalchemy import Numeric, cast, extract, func, or_
 
 from app import config
 # from sqlalchemy.sql.functions import func
@@ -283,6 +283,73 @@ def get_course_assessment_stats(course_code: str, db: Session = Depends(get_db),
         })
 
     return assessment_stats
+
+@router.get("/results/{course_code}/{student_id}")
+def get_student_assessment_results(student_id: int, course_code: str, db: Session = Depends(get_db),
+                                   user: schemas.TokenUser = Depends(oauth2.get_current_user)):
+
+    if not user.is_instructor and user.id != student_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+
+    # Check if the student is enrolled in the course
+    enrollment = db.query(models.Enrollment).filter(
+        models.Enrollment.reg_num == student_id,
+        models.Enrollment.course_code == course_code,
+        models.Enrollment.accepted.is_(True)
+    ).first()
+
+    if not enrollment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not enrolled in the course")
+
+    # Get all assessments in the course
+    assessments = db.query(models.Assessment).filter(models.Assessment.course_id == course_code).all()
+
+    # Prepare the result list
+    results = []
+
+    for assessment in assessments:
+        # Get total score, percentage, and assessment duration for the student in each assessment
+        total = db.query(models.Total).filter(
+            models.Total.student_id == student_id,
+            models.Total.assessment_id == assessment.id
+        ).first()
+
+        if total:
+            total_score = total.total
+            total_percentage = (total_score / assessment.total_mark) * 100
+        else:
+            total_score = 0
+            total_percentage = 0
+
+        # Get assessment time records for the student
+        assessment_time = db.query(cast(
+        func.coalesce(
+            (
+                extract('epoch', models.AssessmentTimeRecords.end_datetime)
+                - extract('epoch', models.AssessmentTimeRecords.start_datetime)
+            ) / 60,
+            0
+        ),
+        Numeric(10, 1)  # Numeric type with 10 digits and 1 decimal place
+    )
+    ).filter(
+        models.AssessmentTimeRecords.student_id == student_id,
+        models.AssessmentTimeRecords.assessment_id == assessment.id
+    ).scalar()
+
+        result_dict = {
+            "id": assessment.id,
+            "title": assessment.title,
+            "type": assessment.assessment_type,
+            "total_score": total_score,
+            "total_percentage": round(total_percentage, 1),
+            "duration": int(assessment_time)
+        }
+
+        results.append(result_dict)
+
+    return results
+
 
 @router.delete("/{code}", status_code=204)
 def delete_courses(code: str, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
