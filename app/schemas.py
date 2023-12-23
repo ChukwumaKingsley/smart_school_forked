@@ -289,14 +289,14 @@ class AssessmentQuestion(Assessment):
         orm_mode = True
 
 
-class AssessmentResults(BaseModel):
+class AssessmentResultsStats(BaseModel):
     name: str
     reg_num: int
     total: float
     photo_url: str = None
     start_datetime: datetime
     end_datetime: datetime
-    assessment_time: int
+    assessment_time: float
 
     class Config:
         orm_mode = True

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from sqlalchemy.orm import joinedload, subqueryload, contains_eager
 
-from sqlalchemy import String, and_, cast, extract, func, or_
+from sqlalchemy import Numeric, String, and_, cast, extract, func, or_
 # from sqlalchemy.sql.functions import func
 from .. import models, schemas, oauth2
 from datetime import timedelta, datetime
@@ -359,9 +359,8 @@ def get_assessment(id: int, db: Session = Depends(get_db),
     return assessment
 
 
-@router.get("/{id}/results", response_model=List[schemas.AssessmentResults])
-def get_assessment_results(id: int, search: Optional[str] = None, db: Session = Depends(get_db),
-                           user: schemas.TokenUser = Depends(oauth2.get_current_user)):
+@router.get("/{id}/results", response_model=List[schemas.AssessmentResultsStats])
+def get_assessment_results(id: int, search: Optional[str] = None, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
     
     if user.is_instructor:
         instructor = db.query(models.Assessment).join(
@@ -380,13 +379,16 @@ def get_assessment_results(id: int, search: Optional[str] = None, db: Session = 
         models.Student.photo_url,
         models.AssessmentTimeRecords.start_datetime.label("start_datetime"),
         models.AssessmentTimeRecords.end_datetime,
+        cast(
         func.coalesce(
             (
                 extract('epoch', models.AssessmentTimeRecords.end_datetime)
                 - extract('epoch', models.AssessmentTimeRecords.start_datetime)
             ) / 60,
             0
-        ).label('assessment_time')
+        ),
+        Numeric(10, 1)  # Numeric type with 10 digits and 1 decimal place
+    ).label('assessment_time')
     ).join(
         models.Total, models.Enrollment.reg_num == models.Total.student_id,
     ).join(
@@ -413,10 +415,58 @@ def get_assessment_results(id: int, search: Optional[str] = None, db: Session = 
 
     return total_query.all()
 
+@router.get("/{id}/result_stats/{reg_num}", response_model=schemas.AssessmentResultsStats)
+def get_student_assessment_results(id: int, reg_num: int, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
 
-@router.get("/{id}/stu_results", response_model=schemas.StuAssessmentReview)
-def get_assessment_results(id: int, db: Session = Depends(get_db),
-                           user: schemas.TokenUser = Depends(oauth2.get_current_user)):
+    if user.is_instructor:
+        instructor = db.query(models.Assessment).join(
+            models.CourseInstructor, models.Assessment.course_id == models.CourseInstructor.course_code
+        ).filter(models.CourseInstructor.instructor_id == user.id, models.Assessment.id == id,
+                 models.CourseInstructor.is_accepted == True).first()
+        if not instructor:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    if not user.is_instructor and user.id != reg_num:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+    total_query = db.query(
+        models.Enrollment.reg_num, 
+        models.Total.total,
+        models.Student.name,
+        models.Student.photo_url,
+        models.AssessmentTimeRecords.start_datetime.label("start_datetime"),
+        models.AssessmentTimeRecords.end_datetime,
+        cast(
+            func.coalesce(
+                (
+                    extract('epoch', models.AssessmentTimeRecords.end_datetime)
+                    - extract('epoch', models.AssessmentTimeRecords.start_datetime)
+                ) / 60,
+                0
+            ),
+            Numeric(10, 1)  # Numeric type with 10 digits and 1 decimal place
+        ).label('assessment_time')
+    ).join(
+        models.Total, models.Enrollment.reg_num == models.Total.student_id,
+    ).join(
+        models.Student, models.Total.student_id == models.Student.id
+    ).outerjoin(
+        models.AssessmentTimeRecords,
+        and_(
+            models.AssessmentTimeRecords.student_id == models.Total.student_id,
+            models.AssessmentTimeRecords.assessment_id == models.Total.assessment_id
+        )
+    ).filter(
+        models.Total.assessment_id == id,
+        models.Total.student_id == reg_num
+    ).order_by(
+        models.Student.name.asc()
+    ).distinct()
+
+    return total_query.first()
+
+
+@router.get("/{id}/student_result/{reg_num}", response_model=schemas.StuAssessmentReview)
+def get_assessment_results(id: int, reg_num: int, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
 
     if user.is_instructor:
         instructor = db.query(models.Assessment).join(
@@ -432,11 +482,10 @@ def get_assessment_results(id: int, db: Session = Depends(get_db),
         if not student:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     total = db.query(models.Total).filter(models.Total.assessment_id == id,
-                                          models.Total.student_id == user.id).first()
-    submissions = db.query(models.Submission).filter(models.Submission.assessment_id == id,
-                                                     models.Submission.student_id == user.id).all()
+                                          models.Total.student_id == reg_num).first()
+    submissions = db.query(models.Submission).filter(models.Submission.assessment_id == id, models.Submission.student_id == reg_num).all()
     scores = db.query(models.Score).filter(models.Score.assessment_id == id,
-                                           models.Score.student_id == user.id).all()
+                                           models.Score.student_id == reg_num).all()
     assessment = db.query(models.Assessment).options(
         joinedload(models.Assessment.instructions)).options(
         joinedload(models.Assessment.questions)).options(
@@ -446,9 +495,6 @@ def get_assessment_results(id: int, db: Session = Depends(get_db),
     submissions_dict = jsonable_encoder(submissions)
     score_dict = jsonable_encoder(scores)
     assessment_dict = jsonable_encoder(assessment)
-    # # print(submissions_dict)
-    print(score_dict)
-    print(submissions_dict)
     for i, question in enumerate(assessment_dict['questions']):
         answer_dic = {"stu_answer": 0, "stu_answer_id": 0}
         for sub in submissions_dict:
