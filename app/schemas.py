@@ -178,7 +178,7 @@ class Instruction(BaseModel):
 
 
 class Instructions(BaseModel):
-    assessment_id: int
+    assessment_id: str
     instructions: List[str]
 
 
@@ -255,7 +255,7 @@ class QuestionAnswer(QuestionOut):
 
 class StuAnswer(BaseModel):
     stu_answer: str = None
-    stu_answer_id: int = None
+    stu_answer_id: str = None
 
 
 class ReviewQuestionAnswer(QuestionOut):

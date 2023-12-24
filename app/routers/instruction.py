@@ -42,7 +42,7 @@ def create_instructions(instructions:schemas.Instructions, user:schemas.TokenUse
 
 
 @router.get("/{assessment_id}", response_model=List[schemas.InstructionOut])
-def get_instructions(assessment_id: int, db: Session = Depends(get_db), user:schemas.TokenUser=Depends(oauth2.get_current_user)):
+def get_instructions(assessment_id: str, db: Session = Depends(get_db), user:schemas.TokenUser=Depends(oauth2.get_current_user)):
     assessment = db.query(models.Assessment).filter(models.Assessment.id == assessment_id).first()
     if not assessment:
         raise HTTPException(status_code=404, detail="Assessment not found")
@@ -52,7 +52,7 @@ def get_instructions(assessment_id: int, db: Session = Depends(get_db), user:sch
     return instructions
 
 @router.put("/{id}",)
-def update_instruction(id: int, instruction:schemas.Instruction, user:schemas.TokenUser=Depends(oauth2.get_current_user),
+def update_instruction(id: str, instruction:schemas.Instruction, user:schemas.TokenUser=Depends(oauth2.get_current_user),
                     db:Session=Depends(get_db)):
     instruction_query = db.query(models.Instruction).filter(models.Instruction.id == id)
     if not instruction_query.first():
@@ -71,7 +71,7 @@ def update_instruction(id: int, instruction:schemas.Instruction, user:schemas.To
     return Response(status_code=status.HTTP_201_CREATED)
 
 @router.delete("/{id}",)
-def delete_instruction(id: int, user:schemas.TokenUser=Depends(oauth2.get_current_user),
+def delete_instruction(id: str, user:schemas.TokenUser=Depends(oauth2.get_current_user),
                     db:Session=Depends(get_db)):
     instruction_query = db.query(models.Instruction).filter(models.Instruction.id == id)
     if not instruction_query.first():

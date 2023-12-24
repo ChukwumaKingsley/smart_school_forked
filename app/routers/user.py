@@ -64,7 +64,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 
 @router.get('/{id}', response_model=schemas.UserOut)
-def get_user(id: int, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
+def get_user(id: str, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
     user = db.query(models.Instructor).filter(
         models.Instructor.id == id).first()
     if not user:
@@ -77,7 +77,7 @@ def get_user(id: int, db: Session = Depends(get_db), user: schemas.TokenUser = D
 
 
 @router.put('/{id}', response_model=schemas.UserOut)
-def update_user(id: int, user_data: schemas.User,  db: Session = Depends(get_db), user_token: schemas.TokenUser = Depends(oauth2.get_current_user)):
+def update_user(id: str, user_data: schemas.User,  db: Session = Depends(get_db), user_token: schemas.TokenUser = Depends(oauth2.get_current_user)):
     user_query = db.query(models.Instructor).filter(models.Instructor.id == id)
     if not user_query.first():
         user_query = db.query(models.Student).filter(models.Student.id == id)
@@ -92,7 +92,7 @@ def update_user(id: int, user_data: schemas.User,  db: Session = Depends(get_db)
 
 
 @router.put('/{id}/password', response_model=schemas.UserOut)
-def update_password(id: int, user_data: schemas.UserPassword,  db: Session = Depends(get_db), user_token: schemas.TokenUser = Depends(oauth2.get_current_user)):
+def update_password(id: str, user_data: schemas.UserPassword,  db: Session = Depends(get_db), user_token: schemas.TokenUser = Depends(oauth2.get_current_user)):
     user_query = db.query(models.Instructor).filter(models.Instructor.id == id)
     if not user_query.first():
         user_query = db.query(models.Student).filter(models.Student.id == id)
@@ -128,7 +128,7 @@ def get_user(user=Depends(oauth2.get_current_user), db: Session = Depends(get_db
 
 
 @router.put("/{id}/photo", response_model=schemas.UserOut)
-async def upload_photo(id: int, file: UploadFile = File(...),
+async def upload_photo(id: str, file: UploadFile = File(...),
                        user_token: schemas.TokenData = Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
     user_query = db.query(models.Instructor).filter(models.Instructor.id == id)
     if not user_query.first():

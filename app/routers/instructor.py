@@ -147,7 +147,7 @@ def get_course_instructors_join_request(course_code: str, db: Session = Depends(
     return JSONResponse(content=serialized_instructors)
 
 @router.put("/{id}", status_code=status.HTTP_201_CREATED, response_model=schemas.EnrollInstructor)
-def update_instructor(id:int, course_code: str = Form(),
+def update_instructor(id: str, course_code: str = Form(),
                        db:Session = Depends(get_db), user:schemas.TokenData = Depends(oauth2.get_current_user)):
     if not user.is_instructor:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
@@ -168,7 +168,7 @@ def update_instructor(id:int, course_code: str = Form(),
     return instructor_query.first()
 
 @router.delete("/{id}/{course_code}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_instructor(id:int, course_code:str, db:Session = Depends(get_db), user:schemas.TokenData = Depends(oauth2.get_current_user)):
+def delete_instructor(id: str, course_code:str, db:Session = Depends(get_db), user:schemas.TokenData = Depends(oauth2.get_current_user)):
     if not user.is_instructor:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     instructor = db.query(models.CourseInstructor).filter(

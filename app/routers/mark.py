@@ -244,7 +244,7 @@ def mark_maths(df: pd.DataFrame, assessment_id: str):
 
 
 @router.post("/{id}")
-def mark_assessment(id: int, db: Session = Depends(get_db),
+def mark_assessment(id: str, db: Session = Depends(get_db),
                     user: schemas.TokenUser = Depends(oauth2.get_current_user)):
     if not user.is_instructor:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)

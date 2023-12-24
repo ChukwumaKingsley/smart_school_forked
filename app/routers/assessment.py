@@ -48,7 +48,7 @@ def create_assessment(assessment: schemas.Assessment, db: Session = Depends(get_
 
 
 @router.put("/{id}", response_model=schemas.AssessmentOut)
-def update_assessment(updated_assessment: schemas.Assessment, id: int, db: Session = Depends(get_db),
+def update_assessment(updated_assessment: schemas.Assessment, id: str, db: Session = Depends(get_db),
                       user: schemas.TokenUser = Depends(oauth2.get_current_user)):
     instructor = db.query(models.CourseInstructor).filter(
         models.CourseInstructor.course_code == updated_assessment.course_id,
@@ -72,7 +72,7 @@ def update_assessment(updated_assessment: schemas.Assessment, id: int, db: Sessi
 
 
 @router.put("/edit-schedule/{id}", response_model=schemas.AssessmentOut)
-def edit_schedule(updated_assessment: schemas.AssessmentSchedule, id: int, db: Session = Depends(get_db),
+def edit_schedule(updated_assessment: schemas.AssessmentSchedule, id: str, db: Session = Depends(get_db),
                       user: schemas.TokenUser = Depends(oauth2.get_current_user)):
     instructor = db.query(models.CourseInstructor).filter(
         models.CourseInstructor.course_code == updated_assessment.course_id,
@@ -108,7 +108,7 @@ def edit_schedule(updated_assessment: schemas.AssessmentSchedule, id: int, db: S
     return assessment_query.first()
 
 @router.put("/{id}/activate", status_code=status.HTTP_201_CREATED)
-def activate_assessment(id: int, db: Session = Depends(get_db),
+def activate_assessment(id: str, db: Session = Depends(get_db),
                       user: schemas.TokenUser = Depends(oauth2.get_current_user)):
     instructor = db.query(models.Assessment).join(
         models.CourseInstructor, models.CourseInstructor.course_code == models.Assessment.course_id
@@ -138,7 +138,7 @@ def activate_assessment(id: int, db: Session = Depends(get_db),
     return
 
 @router.put("/{id}/deactivate", status_code=status.HTTP_201_CREATED)
-def deactivate_assessment(id: int, db: Session = Depends(get_db),
+def deactivate_assessment(id: str, db: Session = Depends(get_db),
                       user: schemas.TokenUser = Depends(oauth2.get_current_user)):
     
     assessment_query = db.query(models.Assessment).filter(
@@ -156,7 +156,7 @@ def deactivate_assessment(id: int, db: Session = Depends(get_db),
     return
 
 @router.put("/{id}/end-automatic", status_code=status.HTTP_201_CREATED)
-def end_assessment_automatic(id: int, db: Session = Depends(get_db),
+def end_assessment_automatic(id: str, db: Session = Depends(get_db),
                       user: schemas.TokenUser = Depends(oauth2.get_current_user)):
     
     assessment_query = db.query(models.Assessment).filter(
@@ -172,7 +172,7 @@ def end_assessment_automatic(id: int, db: Session = Depends(get_db),
     return
 
 @router.put("/{id}/end-manual", status_code=status.HTTP_201_CREATED)
-def end_assessment_automatic(id: int, db: Session = Depends(get_db),
+def end_assessment_automatic(id: str, db: Session = Depends(get_db),
                       user: schemas.TokenUser = Depends(oauth2.get_current_user)):
     
     assessment_query = db.query(models.Assessment).filter(
@@ -190,7 +190,7 @@ def end_assessment_automatic(id: int, db: Session = Depends(get_db),
     return
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_assessment(id: int, db: Session = Depends(get_db),
+def delete_assessment(id: str, db: Session = Depends(get_db),
                       user: schemas.TokenUser = Depends(oauth2.get_current_user)):
     assessment_query = db.query(models.Assessment).filter(
         models.Assessment.id == id)
@@ -211,7 +211,7 @@ def delete_assessment(id: int, db: Session = Depends(get_db),
 
 
 @router.get("/{id}/review", response_model=schemas.AssessmentReview)
-def review_assessment(id: int, db: Session = Depends(get_db),
+def review_assessment(id: str, db: Session = Depends(get_db),
                       user: schemas.TokenUser = Depends(oauth2.get_current_user)):    
     assessment_query = db.query(models.Assessment).filter(
         models.Assessment.id == id)
@@ -250,7 +250,7 @@ def review_assessment(id: int, db: Session = Depends(get_db),
 
 
 @router.get("/{id}/assessment_questions", response_model=schemas.AssessmentReview)
-def get_assessment_questions(id: int, db: Session = Depends(get_db),
+def get_assessment_questions(id: str, db: Session = Depends(get_db),
                              user: schemas.TokenUser = Depends(oauth2.get_current_user)):
     assessment_query = db.query(models.Assessment).filter(
         models.Assessment.id == id)
@@ -298,7 +298,7 @@ def get_assessment_questions(id: int, db: Session = Depends(get_db),
 
 
 @router.get("/{id}/questions", response_model=schemas.AssessmentQuestion)
-def get_assessment_questions(id: int, db: Session = Depends(get_db),
+def get_assessment_questions(id: str, db: Session = Depends(get_db),
                              user: schemas.TokenUser = Depends(oauth2.get_current_user)):
     
     assessment_query = db.query(models.Assessment).filter(
@@ -337,7 +337,7 @@ def get_assessment_questions(id: int, db: Session = Depends(get_db),
 
 
 @router.get("/{id}", response_model=schemas.AssessmentOut)
-def get_assessment(id: int, db: Session = Depends(get_db),
+def get_assessment(id: str, db: Session = Depends(get_db),
                    user: schemas.TokenUser = Depends(oauth2.get_current_user)):
     
     if user.is_instructor:
@@ -362,7 +362,7 @@ def get_assessment(id: int, db: Session = Depends(get_db),
 
 
 @router.get("/{id}/results", response_model=List[schemas.AssessmentResultsStats])
-def get_assessment_results(id: int, search: Optional[str] = None, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
+def get_assessment_results(id: str, search: Optional[str] = None, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
     
     if user.is_instructor:
         instructor = db.query(models.Assessment).join(
@@ -418,7 +418,7 @@ def get_assessment_results(id: int, search: Optional[str] = None, db: Session = 
     return total_query.all()
 
 @router.get("/{id}/result_stats/{reg_num}", response_model=schemas.AssessmentResultsStats)
-def get_student_assessment_results(id: int, reg_num: int, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
+def get_student_assessment_results(id: str, reg_num: int, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
 
     if user.is_instructor:
         instructor = db.query(models.Assessment).join(
@@ -468,7 +468,7 @@ def get_student_assessment_results(id: int, reg_num: int, db: Session = Depends(
 
 
 @router.get("/{id}/student_result/{reg_num}", response_model=schemas.StuAssessmentReview)
-def get_assessment_results(id: int, reg_num: int, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
+def get_assessment_results(id: str, reg_num: int, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
 
     if user.is_instructor:
         instructor = db.query(models.Assessment).join(
@@ -513,7 +513,7 @@ def get_assessment_results(id: int, reg_num: int, db: Session = Depends(get_db),
     return assessment_dict
 
 @router.get("/stats/{assessment_id}")
-def get_assessment_stats(assessment_id: int, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
+def get_assessment_stats(assessment_id: str, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
     # Check if the assessment exists
     assessment = db.query(models.Assessment).filter(models.Assessment.id == assessment_id).first()
 

@@ -40,7 +40,7 @@ def create_question(question:schemas.Question, user:schemas.TokenUser=Depends(oa
     return new_question
 
 @router.put("/{id}", response_model=schemas.QuestionOut)
-def update_question(id:int, updated_question:schemas.QuestionUpdate, user:schemas.TokenUser=Depends(oauth2.get_current_user),
+def update_question(id: str, updated_question:schemas.QuestionUpdate, user:schemas.TokenUser=Depends(oauth2.get_current_user),
                     db:Session=Depends(get_db)):
     instructor = db.query(models.Question).join(
         models.Assessment, models.Question.assessment_id == models.Assessment.id).join(
@@ -66,7 +66,7 @@ def update_question(id:int, updated_question:schemas.QuestionUpdate, user:schema
     return question_query.first()
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_question(id:int,user:schemas.TokenUser=Depends(oauth2.get_current_user),
+def delete_question(id: str,user:schemas.TokenUser=Depends(oauth2.get_current_user),
                     db:Session=Depends(get_db)):
     instructor = db.query(models.Question).join(
         models.Assessment, models.Question.assessment_id == models.Assessment.id).join(

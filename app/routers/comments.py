@@ -1,4 +1,4 @@
-# def create_nlp_row_dict(user_answers: Dict[int, List[str]], correct_answers: Dict[int, List[str]],assessment_id:int,student_id:int) -> Dict:
+# def create_nlp_row_dict(user_answers: Dict[int, List[str]], correct_answers: Dict[int, List[str]],assessment_id: str,student_id: str) -> Dict:
 
 #     for question_id, correct_answer in correct_answers.items():
 #         user_answer = user_answers.get(question_id, [])

@@ -38,7 +38,7 @@ def create_options(answers:schemas.Options, user:schemas.TokenUser=Depends(oauth
     return Response(status_code=status.HTTP_201_CREATED)
 
 @router.put("/{id}",)
-def update_option(id: int,option:schemas.Option, user:schemas.TokenUser=Depends(oauth2.get_current_user),
+def update_option(id: str, option:schemas.Option, user:schemas.TokenUser=Depends(oauth2.get_current_user),
                     db:Session=Depends(get_db)):
     answer_query = db.query(models.Option).filter(models.Option.id == id)
     if not answer_query.first():
@@ -58,7 +58,7 @@ def update_option(id: int,option:schemas.Option, user:schemas.TokenUser=Depends(
     return Response(status_code=status.HTTP_201_CREATED)
 
 @router.delete("/{id}",status_code=status.HTTP_204_NO_CONTENT)
-def delete_option(id: int, user:schemas.TokenUser=Depends(oauth2.get_current_user),
+def delete_option(id: str, user:schemas.TokenUser=Depends(oauth2.get_current_user),
                     db:Session=Depends(get_db)):
     answer_query = db.query(models.Option).filter(models.Option.id == id)
     if not answer_query.first():

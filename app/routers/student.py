@@ -249,7 +249,7 @@ def accept_enrollment(course_code:str= Form(),db:Session = Depends(get_db), user
 
 
 @router.put("/{id}", status_code=status.HTTP_201_CREATED, response_model=schemas.EnrollStudentOut)
-def update_enrollment(id: int, enrollment: schemas.EnrollStudent,db:Session = Depends(get_db), user:schemas.TokenData = Depends(oauth2.get_current_user)):
+def update_enrollment(id: str, enrollment: schemas.EnrollStudent,db:Session = Depends(get_db), user:schemas.TokenData = Depends(oauth2.get_current_user)):
     instructor = db.query(models.CourseInstructor).filter(models.CourseInstructor.course_code == enrollment.course_code,
                                                           models.CourseInstructor.is_accepted == True,
                                              models.CourseInstructor.instructor_id == user.id).first()

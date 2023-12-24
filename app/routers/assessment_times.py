@@ -19,7 +19,7 @@ router = APIRouter(
 )
 
 @router.post("/{course_code}/{assessment_id}", status_code=status.HTTP_201_CREATED)
-def save_start_time(course_code: str, assessment_id: int, user: schemas.TokenUser = Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+def save_start_time(course_code: str, assessment_id: str, user: schemas.TokenUser = Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
 
     course = db.query(models.Course).filter(models.Course.course_code == course_code).first()
     student_enrolled = db.query(models.Enrollment).filter(models.Enrollment.course_code == course_code, models.Enrollment.reg_num == user.id).first()
@@ -51,7 +51,7 @@ def save_start_time(course_code: str, assessment_id: int, user: schemas.TokenUse
     return new_record
     
 @router.get("/{course_code}/{assessment_id}", status_code=status.HTTP_201_CREATED)
-def get_assessment_time_records(course_code: str, assessment_id: int, user: schemas.TokenUser = Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+def get_assessment_time_records(course_code: str, assessment_id: str, user: schemas.TokenUser = Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
 
     course = db.query(models.Course).filter(models.Course.course_code == course_code).first()
     student_enrolled = db.query(models.Enrollment).filter(models.Enrollment.course_code == course_code, models.Enrollment.reg_num == user.id).first()
@@ -81,7 +81,7 @@ def get_assessment_time_records(course_code: str, assessment_id: int, user: sche
     return time_record
     
 @router.put("/end_assessment_time/{course_code}/{assessment_id}", status_code=status.HTTP_201_CREATED)
-def get_assessment_time_records(course_code: str, assessment_id: int, user: schemas.TokenUser = Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+def get_assessment_time_records(course_code: str, assessment_id: str, user: schemas.TokenUser = Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
 
     course = db.query(models.Course).filter(models.Course.course_code == course_code).first()
     student_enrolled = db.query(models.Enrollment).filter(models.Enrollment.course_code == course_code, models.Enrollment.reg_num == user.id).first()

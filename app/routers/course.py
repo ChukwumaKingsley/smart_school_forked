@@ -39,11 +39,9 @@ def create_course(course: schemas.Course, db: Session = Depends(get_db),
     new_course = models.Course(**course.dict())
     new_course.title = trimmed_title
     new_course.description = trimmed_description
-    new_course.id = generate(size=15)
 
-    instructor = schemas.EnrollInstructor(course_code=course.course_code,
-                                          instructor_id=user.id, is_coordinator=True, is_accepted=True)
-    instructor = models.CourseInstructor(**instructor.dict())
+    instructor = models.CourseInstructor(course_code=course.course_code, instructor_id=user.id, is_coordinator=True, is_accepted=True)
+
     db.add(instructor)
     db.add(new_course)
     db.commit()
@@ -285,7 +283,7 @@ def get_course_assessment_stats(course_code: str, db: Session = Depends(get_db),
     return assessment_stats
 
 @router.get("/results/{course_code}/{student_id}")
-def get_student_assessment_results(student_id: int, course_code: str, db: Session = Depends(get_db),
+def get_student_assessment_results(student_id: str, course_code: str, db: Session = Depends(get_db),
                                    user: schemas.TokenUser = Depends(oauth2.get_current_user)):
 
     if not user.is_instructor and user.id != student_id:
