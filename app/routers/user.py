@@ -5,6 +5,7 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import re
+from nanoid import generate
 
 from sqlalchemy import func
 from sqlalchemy import exc
@@ -33,6 +34,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
     if user.id == None:
         if not existing_instructor_email and not existing_student_email:
+            user.id = generate(size=15)
             user_data = user.dict(exclude_unset=True, exclude={"level"})
             new_user = models.Instructor(**user_data)
         else:

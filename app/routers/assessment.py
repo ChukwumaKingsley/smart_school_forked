@@ -3,6 +3,7 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from sqlalchemy.orm import joinedload, subqueryload, contains_eager
+from nanoid import generate
 
 from sqlalchemy import Numeric, String, and_, cast, extract, func, or_
 # from sqlalchemy.sql.functions import func
@@ -37,8 +38,9 @@ def create_assessment(assessment: schemas.Assessment, db: Session = Depends(get_
     
     if assessment.start_date >= assessment.end_date:
         raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED, detail="End date/time should be later than start date/time.")
+    
 
-    new_assessment = models.Assessment(**assessment.dict())
+    new_assessment = models.Assessment(**assessment.dict(), id=generate(size=15))
     db.add(new_assessment)
     db.commit()
     db.refresh(new_assessment)

@@ -42,7 +42,7 @@ class User(BaseModel):
 class UserCreate(User):
     password: str
     title: Optional[str] = None
-    id: Optional[int] = None
+    id: Optional[str] = None
 
 
 class UserPassword(BaseModel):
@@ -58,7 +58,7 @@ class UserPassword(BaseModel):
 
 
 class UserOut(User):
-    id: int
+    id: str
     is_instructor: Optional[bool] = None
     title: Optional[str] = None
     photo_url: Optional[str]
@@ -79,13 +79,13 @@ class TokenData(BaseModel):
 
 
 class TokenUser(BaseModel):
-    id: int
+    id: str
     is_instructor: bool
 
 
 class EnrollInstructor(BaseModel):
     course_code: str
-    instructor_id: int
+    instructor_id: str
     is_coordinator: bool
     is_accepted: bool
 
@@ -103,7 +103,7 @@ class EnrollInstructor(BaseModel):
     course_code: str
 
 class EnrollStudentOut(EnrollStudent):
-    id: int
+    id: str
 
     class Config:
         orm_mode = True
@@ -123,7 +123,7 @@ class StudentsEnrolled(BaseModel):
         orm_mode: True
 
 class CourseInstructorEnrolledOut(BaseModel):
-    instructor_id: int
+    instructor_id: str
     is_current_user: bool
     department: str
     name: str
@@ -166,7 +166,7 @@ class AssessmentSchedule(BaseModel):
 
 
 class AssessmentOut(Assessment):
-    id: int
+    id: str
     is_completed: bool
 
     class Config:
@@ -183,8 +183,8 @@ class Instructions(BaseModel):
 
 
 class InstructionOut(Instruction):
-    id: int
-    assessment_id: int
+    id: str
+    assessment_id: str
 
     class Config:
         orm_mode = True
@@ -197,7 +197,7 @@ class Question(BaseModel):
     tolerance: Optional[float] = None
     is_multi_choice: bool
     num_answer: Optional[int] = None
-    assessment_id: int
+    assessment_id: str
 
 
 class QuestionUpdate(BaseModel):
@@ -210,7 +210,7 @@ class QuestionUpdate(BaseModel):
 
 
 class QuestionOut(Question):
-    id: int
+    id: str
 
     class Config:
         orm_mode = True
@@ -222,30 +222,30 @@ class Option(BaseModel):
 
 
 class OptionOut(Option):
-    id: int
+    id: str
 
     class Config:
         orm_mode = True
 
 
 class Options(BaseModel):
-    question_id: int
+    question_id: str
     options: List[Option]
 
 
 class Submission(BaseModel):
-    question_id: int
+    question_id: str
     stu_answer: Optional[str] = None
-    stu_answer_id: Optional[int] = None
+    stu_answer_id: Optional[str] = None
 
 
 class SubmissionUpdate(BaseModel):
     stu_answer: Optional[str] = None
-    stu_answer_id: Optional[int]
+    stu_answer_id: Optional[str]
 
 
 class Submissions(BaseModel):
-    assessment_id: int
+    assessment_id: str
     submissions: List[Submission]
 
 
@@ -265,13 +265,13 @@ class ReviewQuestionAnswer(QuestionOut):
 
 
 class AssessmentReview(Assessment):
-    id: int
+    id: str
     questions: Optional[List[QuestionAnswer]] = None
     instructions: Optional[List[InstructionOut]] = None
 
 
 class StuAssessmentReview(Assessment):
-    id: int
+    id: str
     questions: Optional[List[ReviewQuestionAnswer]] = None
     instructions: Optional[List[InstructionOut]] = None
     total: float
@@ -281,7 +281,7 @@ class StuAssessmentReview(Assessment):
 
 
 class AssessmentQuestion(Assessment):
-    id: int
+    id: str
     questions: Optional[List[QuestionOut]] = None
     instructions: Optional[List[InstructionOut]] = None
 

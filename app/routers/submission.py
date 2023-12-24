@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Form, Response, status, HTTPException, Depends, APIRouter,  File, UploadFile
+from nanoid import generate
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from fastapi.encoders import jsonable_encoder
@@ -60,7 +61,7 @@ def make_submission(submissions: schemas.Submissions,
     for response in responses:
         # print(response['stu_answer_id'])
         submission = models.Submission(
-            **response, student_id=user.id, assessment_id=submissions.assessment_id)
+            **response, id=generate(size=15), student_id=user.id, assessment_id=submissions.assessment_id)
         stu_subs.append(submission)
 
     assessment_times = db.query(models.AssessmentTimeRecords).filter(models.AssessmentTimeRecords.assessment_id == submissions.assessment_id, models.AssessmentTimeRecords.student_id == user.id).first()

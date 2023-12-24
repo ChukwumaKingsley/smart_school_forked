@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Form, Response, status, HTTPException, Depends, APIRouter,  File, UploadFile
+from nanoid import generate
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -30,7 +31,7 @@ def create_options(answers:schemas.Options, user:schemas.TokenUser=Depends(oauth
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     options = []
     for option in answers.options:
-        new_option = models.Option(**option.dict(), question_id=answers.question_id)
+        new_option = models.Option(**option.dict(), id=generate(size=15), question_id=answers.question_id)
         options.append(new_option)
     db.add_all(options)
     db.commit()

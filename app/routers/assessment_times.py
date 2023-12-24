@@ -3,6 +3,7 @@ from fastapi import FastAPI, Form, Response, status, HTTPException, Depends, API
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from fastapi.encoders import jsonable_encoder
+from nanoid import generate
 
 from sqlalchemy import func, null
 # from sqlalchemy.sql.functions import func
@@ -36,6 +37,7 @@ def save_start_time(course_code: str, assessment_id: int, user: schemas.TokenUse
         return time_record
     
     new_record = models.AssessmentTimeRecords(
+        id = generate(size=15),
         assessment_id = assessment_id,
         student_id = user.id,
         start_datetime = datetime.now(),
@@ -65,10 +67,11 @@ def get_assessment_time_records(course_code: str, assessment_id: int, user: sche
 
     if not time_record:
         new_record = models.AssessmentTimeRecords(
-        assessment_id = assessment_id,
-        student_id = user.id,
-        start_datetime = datetime.now(),
-        end_datetime = None
+            id = generate(size=15),
+            assessment_id = assessment_id,
+            student_id = user.id,
+            start_datetime = datetime.now(),
+            end_datetime = None
     )
         db.add(new_record)
         db.commit()

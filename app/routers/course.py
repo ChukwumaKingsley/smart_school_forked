@@ -1,6 +1,7 @@
 import os
 import cloudinary.uploader
 from fastapi import FastAPI, File, Response, UploadFile, status, HTTPException, Depends, APIRouter
+from nanoid import generate
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -38,6 +39,7 @@ def create_course(course: schemas.Course, db: Session = Depends(get_db),
     new_course = models.Course(**course.dict())
     new_course.title = trimmed_title
     new_course.description = trimmed_description
+    new_course.id = generate(size=15)
 
     instructor = schemas.EnrollInstructor(course_code=course.course_code,
                                           instructor_id=user.id, is_coordinator=True, is_accepted=True)
@@ -47,8 +49,6 @@ def create_course(course: schemas.Course, db: Session = Depends(get_db),
     db.commit()
     db.refresh(new_course)
     return new_course
-
-
 
 @router.put("/{code}/photo", response_model=schemas.CourseOut, status_code=201)
 async def upload_photo(code: str, file: UploadFile = File(...),

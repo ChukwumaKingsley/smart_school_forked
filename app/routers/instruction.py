@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Form, Response, status, HTTPException, Depends, APIRouter,  File, UploadFile
+from nanoid import generate
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from fastapi.encoders import jsonable_encoder
@@ -32,7 +33,8 @@ def create_instructions(instructions:schemas.Instructions, user:schemas.TokenUse
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     new_instructions = []
     for instruction in instructions.instructions:
-        new_instruction = models.Instruction(instruction= instruction, assessment_id=instructions.assessment_id)
+        instruction.id = generate(size=15)
+        new_instruction = models.Instruction(instruction=instruction, assessment_id=instructions.assessment_id)
         new_instructions.append(new_instruction)
     db.add_all(new_instructions)
     db.commit()

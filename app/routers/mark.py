@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Form, Response, status, HTTPException, Depends, APIRouter,  File, UploadFile
+from nanoid import generate
 from sqlalchemy.orm import Session
 from typing import Dict, List, Optional
 from fastapi.encoders import jsonable_encoder
@@ -325,6 +326,7 @@ def mark_assessment(id: int, db: Session = Depends(get_db),
     scores = score_df.to_dict('records')
     stu_scores = []
     for score in scores:
+        score.id = generate(size=15)
         row = models.Score(**score)
         stu_scores.append(row)
     total_df = score_df.groupby(['assessment_id', 'student_id'], as_index=False)[
@@ -336,12 +338,13 @@ def mark_assessment(id: int, db: Session = Depends(get_db),
     totals = total_df.to_dict('records')
     stu_totals = []
     for row in totals:
+        row.id = generate(size=15)
         total = models.Total(**row)
         stu_totals.append(total)
     try:
         db.add_all(stu_scores)
         db.add_all(stu_totals)
-        assessment_query.update({"is_marked": True, "is_active": False},
+        assessment_query.update({"is_marked": True, "is_active": False, "is_complete": True},
                                 synchronize_session=False)
         db.commit()
     except exc.IntegrityError as e:

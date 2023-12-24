@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Form, Response, status, HTTPException, Depends, APIRouter,  File, UploadFile
 from fastapi.responses import JSONResponse
+from nanoid import generate
 from sqlalchemy import String, cast, delete, func, or_
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -147,7 +148,7 @@ def enroll_multiple_students(file: UploadFile, course_code:str = Form(),
     csvReader = csv.DictReader(codecs.iterdecode(file.file, 'utf-8'))
     enrollments = []
     for rows in csvReader:             
-        new_data = {"reg_num":rows['REG. NO.'], "course_code":course_code}
+        new_data = {"reg_num":rows['REG. NO.'], "course_code":course_code, "id": generate(size=15)}
         enrollment = models.Enrollment(**new_data)
         enrollments.append(enrollment)
     
@@ -169,7 +170,7 @@ def make_enrollment_request(enrollment:schemas.EnrollStudent,
         db.commit()
         return "Successfully cancelled enrollment."
     else:
-        new_enroll = models.Enrollment(**enrollment.dict())
+        new_enroll = models.Enrollment(**enrollment.dict(), id=generate(size=15))
         db.add(new_enroll)
         db.commit()
         db.refresh(new_enroll)
@@ -186,7 +187,7 @@ def enroll_one_student(enrollment:schemas.EnrollStudent,
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     if enrollment.reg_num == None:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE)
-    new_enroll = models.Enrollment(**enrollment.dict())
+    new_enroll = models.Enrollment(**enrollment.dict(), id=generate(size=15))
     db.add(new_enroll)
     db.commit()
     db.refresh(new_enroll)

@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Form, Response, status, HTTPException, Depends, APIRouter,  File, UploadFile
+from nanoid import generate
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -32,7 +33,7 @@ def create_question(question:schemas.Question, user:schemas.TokenUser=Depends(oa
     # if (assessment.start_date <= current_time):
     #     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
     #                         detail="cannot add questions to already started assessment")
-    new_question = models.Question(**question.dict())
+    new_question = models.Question(**question.dict(), id=generate(size=15))
     db.add(new_question)
     db.commit()
     db.refresh(new_question)
