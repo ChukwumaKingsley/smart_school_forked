@@ -128,12 +128,12 @@ def get_enrollments(db: Session = Depends(get_db),
         courses_query = db.query(models.Course).join(models.CourseInstructor,
                                                      models.Course.course_code ==
                                                      models.CourseInstructor.course_code).filter(
-            models.CourseInstructor.instructor_id == int(user.id), models.Course.semester == semester)
+            models.CourseInstructor.instructor_id == user.id, models.Course.semester == semester)
     if not user.is_instructor:
         courses_query = db.query(models.Course).join(models.Enrollment,
                                                      models.Course.course_code ==
                                                      models.Enrollment.course_code).filter(
-            models.Enrollment.reg_num == int(user.id), models.Course.semester == semester)
+            models.Enrollment.reg_num == user.id, models.Course.semester == semester)
     if title:
         courses_query = courses_query.filter(
             models.Course.title.contains(title))
@@ -222,7 +222,7 @@ def get_all_assessment(code: str, is_active: bool = None, is_marked: bool = None
     current_time = datetime.now()
     if is_active != None:
         assessment_query = assessment_query.filter(
-            models.Assessment.is_active == is_active, models.Assessment.end_date < current_time)
+            models.Assessment.is_active == is_active, models.Assessment.end_date > current_time)
     if is_marked != None:
         assessment_query = assessment_query.filter(
             models.Assessment.is_marked == is_marked)
@@ -244,7 +244,7 @@ def get_course_assessment_stats(course_code: str, db: Session = Depends(get_db),
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
 
     # Get all assessments for the course
-    assessments = db.query(models.Assessment).filter(models.Assessment.course_id == course_code).all()
+    assessments = db.query(models.Assessment).filter(models.Assessment.course_id == course_code, models.Assessment.is_marked == True).all()
 
     assessment_stats = []
     for assessment in assessments:
@@ -270,6 +270,7 @@ def get_course_assessment_stats(course_code: str, db: Session = Depends(get_db),
             "id": assessment.id,
             "title": assessment.title,
             "type": assessment.assessment_type,
+            "total_possible_score": assessment.total_mark,
             "num_students": num_students,
             "avg_score": round(avg_score, 1),
             "avg_score_percentage": round(avg_score_percentage, 1),
@@ -300,7 +301,7 @@ def get_student_assessment_results(student_id: str, course_code: str, db: Sessio
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not enrolled in the course")
 
     # Get all assessments in the course
-    assessments = db.query(models.Assessment).filter(models.Assessment.course_id == course_code).all()
+    assessments = db.query(models.Assessment).filter(models.Assessment.course_id == course_code, models.Assessment.is_marked == True).all()
 
     # Prepare the result list
     results = []
@@ -339,6 +340,7 @@ def get_student_assessment_results(student_id: str, course_code: str, db: Sessio
             "id": assessment.id,
             "title": assessment.title,
             "type": assessment.assessment_type,
+            "total_possible_score": assessment.total_mark,
             "total_score": total_score,
             "total_percentage": round(total_percentage, 1),
             "duration": int(assessment_time)

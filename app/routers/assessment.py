@@ -411,14 +411,14 @@ def get_assessment_results(id: str, search: Optional[str] = None, db: Session = 
     if search != None:
         total_query = total_query.filter(or_(
             func.lower(models.Student.name).contains(search.lower()), 
-            cast(models.Student.id, String).contains(search.lower())
+            models.Student.id.contains(search.lower())
         ))
 
 
     return total_query.all()
 
 @router.get("/{id}/result_stats/{reg_num}", response_model=schemas.AssessmentResultsStats)
-def get_student_assessment_results(id: str, reg_num: int, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
+def get_student_assessment_results(id: str, reg_num: str, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
 
     if user.is_instructor:
         instructor = db.query(models.Assessment).join(
@@ -468,7 +468,7 @@ def get_student_assessment_results(id: str, reg_num: int, db: Session = Depends(
 
 
 @router.get("/{id}/student_result/{reg_num}", response_model=schemas.StuAssessmentReview)
-def get_assessment_results(id: str, reg_num: int, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
+def get_assessment_results(id: str, reg_num: str, db: Session = Depends(get_db), user: schemas.TokenUser = Depends(oauth2.get_current_user)):
 
     if user.is_instructor:
         instructor = db.query(models.Assessment).join(

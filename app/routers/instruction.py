@@ -33,8 +33,7 @@ def create_instructions(instructions:schemas.Instructions, user:schemas.TokenUse
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     new_instructions = []
     for instruction in instructions.instructions:
-        instruction.id = generate(size=15)
-        new_instruction = models.Instruction(instruction=instruction, assessment_id=instructions.assessment_id)
+        new_instruction = models.Instruction(instruction=instruction, assessment_id=instructions.assessment_id, id = generate(size=15))
         new_instructions.append(new_instruction)
     db.add_all(new_instructions)
     db.commit()

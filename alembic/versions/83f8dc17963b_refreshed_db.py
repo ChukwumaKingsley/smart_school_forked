@@ -88,7 +88,7 @@ def upgrade() -> None:
     op.create_table('enrollments',
     sa.Column('id', sa.String(), nullable=False),
     sa.Column('course_code', sa.String(), nullable=False),
-    sa.Column('reg_num', sa.BigInteger(), nullable=False),
+    sa.Column('reg_num', sa.String(), nullable=False),
     sa.Column('accepted', sa.Boolean(), server_default='FALSE', nullable=False),
     sa.ForeignKeyConstraint(['course_code'], ['courses.course_code'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')

@@ -326,8 +326,7 @@ def mark_assessment(id: str, db: Session = Depends(get_db),
     scores = score_df.to_dict('records')
     stu_scores = []
     for score in scores:
-        score.id = generate(size=15)
-        row = models.Score(**score)
+        row = models.Score(**score, id=generate(size=15))
         stu_scores.append(row)
     total_df = score_df.groupby(['assessment_id', 'student_id'], as_index=False)[
         'score'].sum()
@@ -338,13 +337,12 @@ def mark_assessment(id: str, db: Session = Depends(get_db),
     totals = total_df.to_dict('records')
     stu_totals = []
     for row in totals:
-        row.id = generate(size=15)
-        total = models.Total(**row)
+        total = models.Total(**row, id = generate(size=15))
         stu_totals.append(total)
     try:
         db.add_all(stu_scores)
         db.add_all(stu_totals)
-        assessment_query.update({"is_marked": True, "is_active": False, "is_complete": True},
+        assessment_query.update({"is_marked": True, "is_active": False, "is_completed": True},
                                 synchronize_session=False)
         db.commit()
     except exc.IntegrityError as e:

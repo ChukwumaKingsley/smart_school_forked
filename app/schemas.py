@@ -95,7 +95,7 @@ class EnrollInstructor(BaseModel):
 
 class EnrollStudent(BaseModel):
     course_code: str
-    reg_num: Optional[int]
+    reg_num: Optional[str]
     accepted: Optional[bool] = False
 
 
@@ -112,7 +112,7 @@ class IsEnrolled(BaseModel):
     enrolled: bool
 
 class StudentsEnrolled(BaseModel):
-    reg_num: int
+    reg_num: str
     name: str
     department: str
     level: str
@@ -291,7 +291,7 @@ class AssessmentQuestion(Assessment):
 
 class AssessmentResultsStats(BaseModel):
     name: str
-    reg_num: int
+    reg_num: str
     total: float
     photo_url: str = None
     start_datetime: datetime

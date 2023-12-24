@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, BigInteger, DateTime, UniqueConstraint
+from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, DateTime, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from .database import Base
@@ -54,7 +54,7 @@ class Enrollment(Base):
     id = Column(String, primary_key=True, index=True)
     course_code = Column(String, ForeignKey(
         "courses.course_code", ondelete="CASCADE"), nullable=False)
-    reg_num = Column(BigInteger, nullable=False)
+    reg_num = Column(String, nullable=False)
     accepted = Column(Boolean, server_default="FALSE", nullable=False)
 
 

@@ -86,6 +86,10 @@ def update_user(id: str, user_data: schemas.User,  db: Session = Depends(get_db)
                                 detail=f"User with id: {id} does not exist.")
     if user_query.first().id != user_token.id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized to perform this action.")
+    
+    if user_token.is_instructor:
+        user_data = user_data.copy(exclude={'level'})
+        
     user_query.update(user_data.dict(), synchronize_session=False)
     db.commit()
     return user_query.first()
